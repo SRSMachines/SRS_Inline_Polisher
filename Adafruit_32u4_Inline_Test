@@ -1,0 +1,115 @@
+#include <Wire.h>
+#include "RTClib.h"
+//Including SD libraries
+#include <SPI.h>
+#include <SD.h>
+
+//******************* RTC Defs and Globals *******************
+//Defining instance of RTC Clock for PCF8523
+RTC_PCF8523 rtc; 
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+//******************* SD Defs and Globals ********************
+Sd2Card card; 
+SdVolume volume; 
+SdFile root; 
+const int chipSelect = 10;
+
+
+void setup() 
+{
+  Serial.begin(115200); 
+  while(!Serial)
+  {
+    ; //Wait for the Serial Port to connect. Only needed for native USB port
+  }
+  Serial.println("Welcome to Adafruit 32u4 Test Script!"); 
+  SD_Check(); 
+  RTC_Check(); 
+  Print_Current_RTC_Time(); 
+
+}
+
+void loop() 
+{
+
+}
+
+void RTC_Check()
+{
+  if (!rtc.begin())
+  {
+    Serial.println("Couldn't find RTC");
+    while(1);
+  }
+  if (! rtc.initialized())
+  {
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
+}
+
+void SD_Check()
+{
+  //********** Initializing/Discovering microSD ***********
+  Serial.println("");
+  Serial.println("Checking/Initializing SD Card...");
+  if (!card.init(SPI_HALF_SPEED, chipSelect)) 
+  {
+    Serial.println("initialization failed. Things to check:");
+    Serial.println("* is a card inserted?");
+    Serial.println("* is your wiring correct?");
+    Serial.println("* did you change the chipSelect pin to match your shield or module?");
+    while (1);
+  } 
+  else 
+  {
+    Serial.println("Wiring is correct and a card is present.");
+  }
+  //Printing Card Info
+  Serial.println();
+  Serial.print("Card type: ");
+  switch (card.type()) 
+  {
+    case SD_CARD_TYPE_SD1:
+      Serial.println("SD1");
+      break;
+    case SD_CARD_TYPE_SD2:
+      Serial.println("SD2");
+      break;
+    case SD_CARD_TYPE_SDHC:
+      Serial.println("SDHC");
+      break;
+    default:
+      Serial.println("Unknown");
+  }
+}
+
+void Print_Current_RTC_Time()
+{
+    Serial.println("Current RTC Time: "); 
+    DateTime now = rtc.now();
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(" (");
+    Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+    Serial.print(") ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println();
+    
+    Serial.print(" since midnight 1/1/1970 = ");
+    Serial.print(now.unixtime());
+    Serial.print("s = ");
+    Serial.print(now.unixtime() / 86400L);
+    Serial.println("d");
+}
